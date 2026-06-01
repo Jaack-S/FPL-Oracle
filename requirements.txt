@@ -1,0 +1,2 @@
+pandas == 2.2.3
+ipykernel == 6.25.0
