@@ -1,22 +1,7 @@
 import pandas as pd
 
+from clean import add_target_columns, clean
 from constants import DATA_DIR, RAW_OUTPUT_DIR, SEASONS
-
-
-def rolling_forward_sum(group, window):
-    pts = group["total_points"].values
-    result = []
-    for i in range(len(pts)):
-        result.append(pts[i:i+window].sum())
-    return pd.Series(result, index=group.index)
-
-def clean_data(df):
-    # Make the name clean
-    df["name"] = df["name"].str.strip()
-    df["name"] = df["name"].str.replace(r"\s+", "_", regex=True) # replace blank space
-    return df
-
-
 
 if __name__ == "__main__":
     data = [] 
@@ -43,17 +28,10 @@ if __name__ == "__main__":
     merged_df.reset_index(drop=True, inplace=True)
 
     # Clean the data
-    merged_df = clean_data(merged_df)
+    merged_df = clean(merged_df)
 
     # Now create target columns
-    merged_df["points_next_three"] = (
-        merged_df.groupby(["season", "name"], group_keys=False)
-        .apply(lambda g: rolling_forward_sum(g, 3))
-    )
-    merged_df["points_next_five"] = (
-        merged_df.groupby(["season", "name"], group_keys=False)
-        .apply(lambda g: rolling_forward_sum(g, 5))
-    )
+    merged_df = add_target_columns(merged_df)
     print("Added target columns: points_next_three and points_next_five.")
 
     # Save the merged data to a new CSV file
