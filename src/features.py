@@ -1,7 +1,11 @@
 # Creating Features
 
-import os
+import json
+
 import pandas as pd
+
+from constants import DATA_DIR
+
 
 class Features:
     def __init__(self, windows=[1, 3, 5], min_periods: int = 1):
@@ -29,7 +33,7 @@ class Features:
 
         if missing:
             print(f"Missing columns: {missing}")
-        
+
         grouped = df.groupby(["name", "season"])
 
         for col in available_metrics:
@@ -87,20 +91,50 @@ class Features:
             df = pd.get_dummies(df, columns=[position_col], dtype=int)
         return df
 
+    def get_feature_names(self, df: pd.DataFrame) -> list[str]:
+        """Return list of feature column names created by transform."""
+        feature_cols = []
+
+        available_metrics = [col for col in self.metrics if col in df.columns]
+
+        for col in available_metrics:
+            for w in self.windows:
+                feature_name = f"{col}_last_{w}"
+                if feature_name in df.columns:
+                    feature_cols.append(feature_name)
+
+        return feature_cols
+
 def main():
-    input_filename = "merged_data.csv"
-    output_filename = "data_with_features.csv"
+    input_path = DATA_DIR / "merged_data.csv"
+    output_path = DATA_DIR / "data_with_features.csv"
+    feature_config_path = DATA_DIR / "all_feature_names.json"
 
-    if not os.path.exists(input_filename):
-        print(f"Error: {input_filename} not found.")
-        return
+    if not input_path.exists():
+        raise FileNotFoundError(f"File not found: {input_path}")
 
-    df = pd.read_csv(input_filename, low_memory = False)
+    df = pd.read_csv(input_path)
 
     engineer = Features(windows=[1, 3, 5])
     df_features = engineer.transform(df)
 
-    df_features.to_csv(output_filename, index=False)
+    df_features.to_csv(output_path, index=False)
+    print(f"Feature data saved to {output_path}")
+
+    # Export feature names and metadata
+    feature_names = engineer.get_feature_names(df_features)
+    feature_config = {
+        "feature_columns": feature_names,
+        "windows": engineer.windows,
+        "metrics": engineer.metrics,
+        "min_periods": engineer.min_periods
+    }
+
+    with open(feature_config_path, "w") as f:
+        json.dump(feature_config, f, indent=2)
+
+    print(f"Feature config saved to {feature_config_path}")
+    print(f"Total features created: {len(feature_names)}")
 
 if __name__ == "__main__":
     main()
