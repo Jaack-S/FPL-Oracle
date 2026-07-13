@@ -25,6 +25,12 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     if 'name' in df.columns:
         df["name"] = df["name"].astype(str).str.strip()
         df["name"] = df["name"].str.replace(r"\s+", "_", regex=True)
+
+    # Deduplicate by GW: if a player appears twice in the same GW, keep the row with most minutes
+    df = (
+        df.sort_values("minutes", ascending=False)
+        .drop_duplicates(subset=["season", "name", "GW"], keep="first")
+    )
     
     print('Adding target columns: points in next 3 and 5 gameweeks...')
     # sort data in order
