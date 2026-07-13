@@ -129,6 +129,9 @@ class Features:
 
         return feature_cols
 
+    def get_unscaled_features(self, df: pd.DataFrame) -> list[str]:
+        return [f"position_{p}" for p in self.POSITIONS if f"position_{p}" in df.columns]
+
 
 def main():
     input_path = DATA_DIR / "merged_data.csv"
@@ -154,6 +157,7 @@ def main():
         "metrics": engineer.metrics,
         "min_periods": engineer.min_periods,
         "flat_features": engineer.flat_features,
+        "unscaled_features": engineer.get_unscaled_features(df_features),
         "positions": engineer.POSITIONS,
     }
 

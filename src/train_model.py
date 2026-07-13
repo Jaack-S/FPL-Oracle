@@ -14,11 +14,17 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
+from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
+
+def load_feature_config(feature_config_path: Path) -> dict:
+    with open(feature_config_path, "r") as f:
+        return json.load(f)
 
 
 def load_feature_names(feature_config_path: Path) -> list[str]:
@@ -30,9 +36,55 @@ def load_feature_names(feature_config_path: Path) -> list[str]:
     actually useful in the model. At the moment it's fine, but eventually we
     may have loads of features and trimming the will improve model generalisation.
     """
-    with open(feature_config_path, "r") as f:
-        config = json.load(f)
-    return config["feature_columns"]
+    return load_feature_config(feature_config_path)["feature_columns"]
+
+
+def _default_feature_config_path() -> Path:
+    from constants import DATA_DIR
+    return DATA_DIR / "all_feature_names.json"
+
+
+def _resolve_feature_scaling(
+    feature_cols: list[str] | None,
+    unscaled_features: list[str] | None,
+    feature_config_path: Path | None = None,
+) -> tuple[list[str], list[str]]:
+    if feature_cols is not None and unscaled_features is not None:
+        return feature_cols, unscaled_features
+
+    config = load_feature_config(feature_config_path or _default_feature_config_path())
+    if feature_cols is None:
+        feature_cols = config["feature_columns"]
+    if unscaled_features is None:
+        unscaled_features = config.get("unscaled_features", [])
+    return feature_cols, unscaled_features
+
+
+def scaling_pipeline(
+    feature_cols: list[str],
+    unscaled_features: list[str],
+    model,
+) -> Pipeline:
+    scaled_cols = [col for col in feature_cols if col not in unscaled_features]
+    unscaled_cols = [col for col in feature_cols if col in unscaled_features]
+
+    if not unscaled_cols:
+        return Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", model),
+        ])
+
+    preprocessor = ColumnTransformer(
+        [
+            ("scaled", StandardScaler(), scaled_cols),
+            ("unscaled", "passthrough", unscaled_cols),
+        ],
+        verbose_feature_names_out=False,
+    )
+    return Pipeline([
+        ("scaler", preprocessor),
+        ("model", model),
+    ])
 
 
 def seasonal_split(
@@ -161,7 +213,7 @@ def train_and_predict(
 # Hyperparameter tuning
 # ---------------------------------------------------------------------------
 
-def seasonal_cv_splits(df: pd.DataFrame, train_seasons: list[str], n_splits: int = 3):
+def seasonal_cv_splits(df: pd.DataFrame, train_seasons: list[str], n_splits: int = 2):
     """
     Generate train/validation indices for seasonal cross-validation.
 
@@ -201,8 +253,9 @@ def tune_ridge_alpha(
     target_col: str,
     feature_cols: list[str],
     train_seasons: list[str],
+    unscaled_features: list[str] | None = None,
     alphas: list[float] = None,
-    cv_splits: int = 3,
+    cv_splits: int = 2,
 ) -> float:
     """
     Use seasonal cross-validation on training seasons to find best Ridge alpha value.
@@ -219,6 +272,8 @@ def tune_ridge_alpha(
     if alphas is None:
         alphas = [0.01, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
 
+    _, unscaled_features = _resolve_feature_scaling(feature_cols, unscaled_features)
+
     # Filter to training seasons only
     train_df = df[df["season"].isin(train_seasons)].copy()
     train_clean = train_df.dropna(subset=feature_cols + [target_col])
@@ -226,11 +281,7 @@ def tune_ridge_alpha(
     X = train_clean[feature_cols]
     y = train_clean[target_col]
 
-    # Create pipeline with StandardScaler
-    pipeline = Pipeline([
-        ("scaler", StandardScaler()),
-        ("model", Ridge()),
-    ])
+    pipeline = scaling_pipeline(feature_cols, unscaled_features, Ridge())
 
     # Generate seasonal CV folds
     cv_folds = list(seasonal_cv_splits(train_clean, train_seasons, n_splits=cv_splits))
@@ -265,23 +316,32 @@ def tune_ridge_alpha(
     return best_alpha
 
 
-def ridge_model(alpha: float = 1.0) -> Pipeline:
+def ridge_model(
+    alpha: float = 1.0,
+    feature_cols: list[str] | None = None,
+    unscaled_features: list[str] | None = None,
+    feature_config_path: Path | None = None,
+) -> Pipeline:
     """
     Ridge regression (linear model with regularisation).
 
     Good first step after the moving average baseline:
     - Still interpretable — we can inspect model coefficients
     - The scaler is essential: rolling averages and was_home are on different scales
+    - One-hot features (e.g. position dummies) are left unscaled
     - Regularisation (alpha) prevents overfitting on correlated rolling features
 
     Parameters
     ----------
     alpha : regularisation strength (higher = more regularisation)
+    feature_cols : all feature columns, used to build the partial scaler
+    unscaled_features : columns to pass through without scaling
+    feature_config_path : optional path to feature config JSON
     """
-    return Pipeline([
-        ("scaler", StandardScaler()),
-        ("model",  Ridge(alpha=alpha)),
-    ])
+    feature_cols, unscaled_features = _resolve_feature_scaling(
+        feature_cols, unscaled_features, feature_config_path
+    )
+    return scaling_pipeline(feature_cols, unscaled_features, Ridge(alpha=alpha))
 
 
 if __name__ == "__main__":
@@ -295,10 +355,12 @@ if __name__ == "__main__":
     df = pd.read_csv(data_path)
 
     print(f"Loading feature configuration from {feature_config_path}")
-    feature_cols = load_feature_names(feature_config_path)
+    feature_config = load_feature_config(feature_config_path)
+    feature_cols = feature_config["feature_columns"]
+    unscaled_features = feature_config.get("unscaled_features", [])
     print(f"Using {len(feature_cols)} features")
 
-    TEST_SEASONS = ["2023-24", "2024-25"]
+    TEST_SEASONS = ["2024-25", "2025-26"]
     TRAIN_SEASONS = [s for s in df["season"].unique() if s not in TEST_SEASONS]
     TARGET = "points_next_three"
 
@@ -312,12 +374,13 @@ if __name__ == "__main__":
         target_col=TARGET,
         feature_cols=feature_cols,
         train_seasons=TRAIN_SEASONS,
-        cv_splits=3,
+        unscaled_features=unscaled_features,
+        cv_splits=2,
     )
 
     df_ridge, ridge_metrics = train_and_predict(
         df=df,
-        model=ridge_model(alpha=best_alpha),
+        model=ridge_model(alpha=best_alpha, feature_cols=feature_cols, unscaled_features=unscaled_features),
         target_col=TARGET,
         test_seasons=TEST_SEASONS,
         feature_cols=feature_cols,

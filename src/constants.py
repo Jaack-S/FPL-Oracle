@@ -1,20 +1,37 @@
 from pathlib import Path
 
 SEASONS = [
-    "2016-17",
-    "2017-18",
-    "2018-19",
-    "2019-20",
-    "2020-21",
+    # pre-2019 contains too many data quirks e.g. no xG etc. We may want to include it one day
+    # if we can get understat working
+    # 2019-20 contains 47 gameweeks, covid happened, weird namings. Drop it.
+    # "2016-17",
+    # "2017-18",
+    # "2018-19",
+    # "2019-20",
+
+    # no understat xG/xA data on a per-player level
+    # "2020-21",
+
+    # Rolling cross-validation seasons for train/val
     "2021-22",
     "2022-23",
     "2023-24",
+    # Test/holdout
     "2024-25",
-    # "2025-26"
+    "2025-26"
 ]
 
 DATA_DIR = Path("data")
 RAW_OUTPUT_DIR = DATA_DIR / "raw/vaastav"
+UNDERSTAT_RAW_DIR = RAW_OUTPUT_DIR / "understat"
+
+# Seasons with per-player Understat match data in the vaastav repo. 2020-21 only has
+# team-level Understat files there, and earlier seasons predate the pre-scrape entirely.
+UNDERSTAT_SEASONS = ["2021-22", "2022-23", "2023-24", "2024-25"]
+
+# Seasons that ship an id_dict.csv (direct Understat_ID -> FPL_ID mapping). The other
+# UNDERSTAT_SEASONS rely on carrying these IDs forward plus name matching - see src/understat.py.
+ID_DICT_SEASONS = ["2021-22", "2022-23"]
 
 COLUMNS = [
     "season",
