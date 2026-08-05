@@ -1,20 +1,30 @@
 from pathlib import Path
 
 SEASONS = [
-    "2016-17",
-    "2017-18",
-    "2018-19",
-    "2019-20",
-    "2020-21",
+    # pre-2019 contains too many data quirks e.g. no xG etc. We may want to include it one day
+    # if we can get understat working
+    # 2019-20 contains 47 gameweeks, covid happened, weird namings. Drop it.
+    # "2016-17",
+    # "2017-18",
+    # "2018-19",
+    # "2019-20",
+
+    # no understat xG/xA data on a per-player level
+    # "2020-21",
+
+    # Rolling cross-validation seasons for train/val
     "2021-22",
     "2022-23",
     "2023-24",
+    # Test/holdout
     "2024-25",
-    # "2025-26"
+    "2025-26"
 ]
 
 DATA_DIR = Path("data")
 RAW_OUTPUT_DIR = DATA_DIR / "raw/vaastav"
+
+POSITION_MAP = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
 COLUMNS = [
     "season",

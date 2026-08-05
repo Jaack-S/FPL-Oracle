@@ -39,12 +39,14 @@ def _bar(ax, x_labels, values, title, ylabel, annotate=True):
     ax.grid(axis="y", alpha=0.3)
     if annotate:
         for bar, val in zip(bars, values):
-            if val is not None:
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + 0.005,
-                    f"{val:.3f}", ha="center", va="bottom", fontsize=8,
-                )
+            if val is not None and bar.get_height() is not None:
+                height = bar.get_height()
+                if pd.notna(height):
+                    ax.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        height + 0.005,
+                        f"{val:.3f}", ha="center", va="bottom", fontsize=8,
+                    )
  
  
 def plot_mae_by_season(all_metrics: AllMetrics) -> plt.Figure:
@@ -68,7 +70,7 @@ def plot_mae_by_gameweek(all_metrics: AllMetrics) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(12, 4))
     for i, (season, sm) in enumerate(all_metrics.seasons.items()):
         gws = sorted(sm.by_gameweek.keys())
-        maes = [sm.by_gameweek[gw]["mean_absolute_error"] for gw in gws]
+        maes = [sm.by_gameweek[gw]["mean_absolute_error"] or 0 for gw in gws]
         ax.plot(gws, maes, label=season, linewidth=1.8, color=PALETTE[i % len(PALETTE)])
     ax.set_xlabel("Gameweek")
     ax.set_ylabel("MAE (points)")
@@ -87,7 +89,7 @@ def plot_mae_by_position(all_metrics: AllMetrics) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(10, 4))
     for i, (season, sm) in enumerate(all_metrics.seasons.items()):
         maes = [
-            (sm.by_position.get(pos) or {}).get("mean_absolute_error", 0)
+            (sm.by_position.get(pos) or {}).get("mean_absolute_error") or 0
             for pos in POSITION_ORDER
         ]
         offset = (i - len(seasons) / 2) * width + width / 2

@@ -21,6 +21,17 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     if 'position' in df.columns:
         df = df[df['position'] != 'AM'].copy()
 
+    # 2021-22 uses 'GKP' instead of 'GK' for goalkeepers; normalise to one label
+    if 'position' in df.columns:
+        df['position'] = df['position'].replace('GKP', 'GK')
+
+    # drop assistant manager chip stats - almost entirely null and always 0 when present
+    mng_columns = [
+        "mng_win", "mng_draw", "mng_loss", "mng_clean_sheets",
+        "mng_goals_scored", "mng_underdog_win", "mng_underdog_draw",
+    ]
+    df = df.drop(columns=[c for c in mng_columns if c in df.columns])
+
     # make sure names are in form Firstname_Surname
     if 'name' in df.columns:
         df["name"] = df["name"].astype(str).str.strip()
