@@ -9,6 +9,7 @@ We then check for signs of overfitting by checking generalisation gap between tr
 import json
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
@@ -375,3 +376,30 @@ if __name__ == "__main__":
         prediction_col="predicted_pts",
         verbose=True,
     )
+
+# Serialisation
+
+    models_dir = DATA_DIR / "models"
+    models_dir.mkdir(parents=True, exist_ok=True)
+    model_save_path = models_dir / "ridge_model.joblib"
+
+    print(
+        f"Fitting final model with alpha={best_alpha} on all training"
+        f" seasons ({len(TRAIN_SEASONS)} seasons)..."
+    )
+# Filter to training seasons and clean NaNs
+    train_df = df[df["season"].isin(TRAIN_SEASONS)].dropna(
+        subset=feature_cols + [TARGET]
+    )
+    X_train = train_df[feature_cols]
+    y_train = train_df[TARGET]
+
+    final_model = ridge_model(
+        alpha=best_alpha,
+        feature_cols=feature_cols,
+        unscaled_features=unscaled_features,
+    )
+    final_model.fit(X_train, y_train)
+
+    joblib.dump(final_model, model_save_path)
+    print(f"✅ Final pipeline successfully saved to: {model_save_path}")
