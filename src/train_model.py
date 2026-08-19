@@ -377,7 +377,7 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-# Serialisation
+    # Serialisation
 
     models_dir = DATA_DIR / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -387,7 +387,7 @@ if __name__ == "__main__":
         f"Fitting final model with alpha={best_alpha} on all training"
         f" seasons ({len(TRAIN_SEASONS)} seasons)..."
     )
-# Filter to training seasons and clean NaNs
+    # Filter to training seasons and clean NaNs
     train_df = df[df["season"].isin(TRAIN_SEASONS)].dropna(
         subset=feature_cols + [TARGET]
     )
