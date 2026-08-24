@@ -1,5 +1,11 @@
 from pathlib import Path
+import sys
 
+
+# Ensures FPL-Oracle project root is always in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 SEASONS = [
     # pre-2019 contains too many data quirks e.g. no xG etc. We may want to include it one day
     # if we can get understat working
