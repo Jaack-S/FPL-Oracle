@@ -11,17 +11,43 @@ from src.common.constants import DATA_DIR, MODELS_DIR
 
 
 def load_latest_features() -> pd.DataFrame:
-    """Load feature-engineered live data produced by features.py."""
-    data_path = DATA_DIR / "data_with_features.csv"
-    if not data_path.exists():
-        raise FileNotFoundError(
-            f"Could not find {data_path}. Run features.py first"
-        )
-    return pd.read_csv(data_path)
+    """Load feature-engineered live data, ready for the model to predict on.
+
+    TODO(live features): this doesn't exist yet, and needs more than just
+    reading a CSV. src.common.features.Features.transform() computes rolling
+    "last 1/3/5 gameweek" windows and a points EMA per player - it needs
+    per-gameweek history to do that. src.live.get_live_data.py currently only
+    calls the FPL bootstrap-static endpoint, which returns one row per player
+    with season-to-date CUMULATIVE totals (e.g. total minutes so far), not
+    per-gameweek rows. Feeding that snapshot straight into Features.transform()
+    would produce rolling windows that don't make sense (or fall back to all-zeros).
+
+    To implement this properly:
+      1. Fetch per-gameweek history for the current season for every player,
+         e.g. FPL's `element-summary/{player_id}/` endpoint (returns each
+         player's gameweek-by-gameweek history), or maintain our own log of
+         daily/weekly snapshots as the season progresses.
+      2. Reshape that into the same one-row-per-player-per-gameweek shape as
+         data/merged_data.csv (same column names Features expects).
+      3. Run it through src.common.features.Features.transform() - the exact
+         code path used to build training features - so live and training
+         features are computed identically and don't quietly drift apart
+         (train/serve skew).
+      4. Save the result (e.g. data/live/data_with_features.csv) and load it
+         here instead of raising.
+
+    Until then this deliberately fails loudly rather than silently predicting
+    on the training feature set (data/data_with_features.csv), which would
+    look like it worked but wouldn't be live data at all.
+    """
+    raise NotImplementedError(
+        "Live feature building isn't implemented yet - see the docstring on "
+        "load_latest_features() for what's missing and why."
+    )
 
 
 def generate_predictions():
-    model_path = DATA_DIR / "models" / "ridge_model.joblib"
+    model_path = MODELS_DIR / "ridge_model.joblib"
     config_path = DATA_DIR / "all_feature_names.json"
 
     if not model_path.exists():
