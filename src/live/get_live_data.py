@@ -1,6 +1,12 @@
-import json
+import sys
+from pathlib import Path
+
 import pandas as pd
 import requests
+
+# Put the repo root on sys.path so we can resolve `from src import ...` properly
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.common.constants import DATA_DIR
 
 # Base URL for static FPL data (players, teams, gameweeks)
 FPL_BOOTSTRAP_URL = "https://fantasy.premierleague.com/api/bootstrap-static/"
@@ -40,5 +46,6 @@ if __name__ == "__main__":
     df_players = extract_player_data(raw_data)
 
     # Save live inference data separately from training data
-    df_players.to_csv("live_fpl_data.csv", index=False)
+    # TODO: We should save this with a timestamp so that we can track things over time.
+    df_players.to_csv(DATA_DIR / "live/live_fpl_data.csv", index=False)
     print(f"Fetched {len(df_players)} players and saved to live_fpl_data.csv")

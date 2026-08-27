@@ -1,7 +1,12 @@
+import sys
+from pathlib import Path
+
 import pandas as pd
 
-from clean import add_target_columns, clean
-from constants import DATA_DIR, RAW_OUTPUT_DIR, SEASONS
+# Put the repo root on sys.path so we can resolve `from src import ...` properly
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.common.constants import DATA_DIR, RAW_OUTPUT_DIR, SEASONS
+from src.training.clean import add_target_columns, clean
 
 if __name__ == "__main__":
     data = [] 

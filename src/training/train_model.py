@@ -7,9 +7,9 @@ We then check for signs of overfitting by checking generalisation gap between tr
 """
 
 import json
+import sys
 from pathlib import Path
 
-import sys
 import joblib
 import numpy as np
 import pandas as pd
@@ -21,12 +21,10 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+# Put the repo root on sys.path so we can resolve `from src import ...` properly
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.common.constants import DATA_DIR, MODELS_DIR
 
-ROOT_DIR = Path(__file__).resolve().parent
-if (ROOT_DIR / "src").exists():
-    sys.path.insert(0, str(ROOT_DIR / "src"))
-else:
-    sys.path.insert(0, str(ROOT_DIR))
 
 def load_feature_config(feature_config_path: Path) -> dict:
     with open(feature_config_path, "r") as f:
@@ -45,7 +43,6 @@ def load_feature_names(feature_config_path: Path) -> list[str]:
 
 
 def _default_feature_config_path() -> Path:
-    from src.constants import DATA_DIR
     return DATA_DIR / "all_feature_names.json"
 
 
@@ -341,8 +338,6 @@ def ridge_model(
 
 
 if __name__ == "__main__":
-    from constants import DATA_DIR
-
     # Load data and feature configuration
     data_path = DATA_DIR / "data_with_features.csv"
     feature_config_path = DATA_DIR / "all_feature_names.json"
@@ -386,7 +381,7 @@ if __name__ == "__main__":
 
     # Serialisation
 
-    models_dir = DATA_DIR / "models"
+    models_dir = MODELS_DIR
     models_dir.mkdir(parents=True, exist_ok=True)
     model_save_path = models_dir / "ridge_model.joblib"
 

@@ -5,12 +5,9 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-# Add src folder to sys.path
-SRC_DIR = Path(__file__).resolve().parent
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
-from constants import DATA_DIR
+# Put the repo root on sys.path so we can resolve `from src import ...` properly
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.common.constants import DATA_DIR, MODELS_DIR
 
 
 def load_latest_features() -> pd.DataFrame:
