@@ -42,6 +42,9 @@ def extract_player_data(data):
     return players_df
 
 if __name__ == "__main__":
+    if not (DATA_DIR / "live").exists():
+        (DATA_DIR / "live").mkdir(parents=True, exist_ok=True)
+
     raw_data = get_data()
     df_players = extract_player_data(raw_data)
 
