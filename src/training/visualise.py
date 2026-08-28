@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.evaluate import AllMetrics, compute_metrics
+from src.training.evaluate import AllMetrics, compute_metrics
 
 
 def plot_across_seasons():

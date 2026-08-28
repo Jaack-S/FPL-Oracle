@@ -10,7 +10,7 @@ class MovingAverageModel:
         df = X.sort_values(["name", "season", "GW"])
 
         # Shift by 1 so GW t uses only history up to GW t-1
-        df["points_lag1"] = df.groupby(["name", "season"])["total_points"].sift(1)
+        df["points_lag1"] = df.groupby(["name", "season"])["total_points"].shift(1)
 
         df["prediction_next_one"] = df.groupby(["name", "season"])[
             "points_lag1"

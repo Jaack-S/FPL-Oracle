@@ -1,9 +1,8 @@
-from pathlib import Path
 import sys
-
+from pathlib import Path
 
 # Ensures FPL-Oracle project root is always in sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 SEASONS = [
@@ -28,6 +27,7 @@ SEASONS = [
 ]
 
 DATA_DIR = Path("data")
+MODELS_DIR = Path("models")
 RAW_OUTPUT_DIR = DATA_DIR / "raw/vaastav"
 
 POSITION_MAP = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}

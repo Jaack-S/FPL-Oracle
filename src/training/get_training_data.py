@@ -1,6 +1,11 @@
+import sys
+from pathlib import Path
+
 import pandas as pd
 
-from src.constants import POSITION_MAP, RAW_OUTPUT_DIR, SEASONS
+# Put the repo root on sys.path so we can resolve `from src import ...` properly
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.common.constants import POSITION_MAP, RAW_OUTPUT_DIR, SEASONS
 
 BASE_URL = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data"
 
