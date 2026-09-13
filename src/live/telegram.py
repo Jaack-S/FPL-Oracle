@@ -16,10 +16,10 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GET_UPDATES_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
 
-CHAT_ID = "-5426846343"
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 if __name__ == "__main__":
     message = generate_predictions()
-    send_message_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}"
+    send_message_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage?chat_id={TELEGRAM_CHAT_ID}&text={message}"
 
     print(requests.get(send_message_url).json())
