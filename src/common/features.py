@@ -8,7 +8,7 @@ import pandas as pd
 
 # Put the repo root on sys.path so we can resolve `from src import ...` properly
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.common.constants import DATA_DIR, POSITION_MAP
+from src.common.constants import DATA_DIR, MODELS_DIR, POSITION_MAP
 
 
 class Features:
@@ -20,7 +20,14 @@ class Features:
         # NOTE: expected_goals/expected_assists/expected_goals_conceded are entirely NaN in the data
         # before 2022-23, and the rolling computation below fillna(0)s them - this means that the
         # _last_1/3/5 columns for these three are faulty until backfilled from another source (e.g. Understat).
-        self.metrics = ["total_points", "minutes", "expected_goals", "expected_assists", "expected_goals_conceded", "bonus"]
+        self.metrics = [
+            "total_points",
+            "minutes",
+            "expected_goals",
+            "expected_assists",
+            "expected_goals_conceded",
+            "bonus",
+        ]
 
     @staticmethod
     def _group_season_key(names: pd.Series, seasons: pd.Series) -> pd.Series:
@@ -61,7 +68,7 @@ class Features:
 
         if missing:
             print(f"Missing columns: {missing}")
-        
+
         grouped = df.groupby(["name", "season"])
         player_key = self._group_season_key(df["name"], df["season"])
 
@@ -89,10 +96,15 @@ class Features:
                 .transform(lambda x: x.ewm(span=3, adjust=False).mean())
             )
             df["points_ema_3"] = df["points_ema_3"].fillna(0)
-        
+
         # Feature for opponent's xGC to find "weaker" defences
-        if "team" in df.columns and "expected_goals_conceded" in df.columns and "GW" in df.columns:
-            team_xgc = (df.groupby(["team", "season", "GW"])["expected_goals_conceded"]
+        if (
+            "team" in df.columns
+            and "expected_goals_conceded" in df.columns
+            and "GW" in df.columns
+        ):
+            team_xgc = (
+                df.groupby(["team", "season", "GW"])["expected_goals_conceded"]
                 .mean()
                 .reset_index()
                 .sort_values(["team", "season", "GW"])
@@ -101,7 +113,8 @@ class Features:
             team_key = self._group_season_key(team_xgc["team"], team_xgc["season"])
 
             # Shift by 1
-            team_xgc["team_xGC_last_3"] = (team_xgc.groupby(["team", "season"])["expected_goals_conceded"]
+            team_xgc["team_xGC_last_3"] = (
+                team_xgc.groupby(["team", "season"])["expected_goals_conceded"]
                 .shift(1)
                 .groupby(team_key)
                 .rolling(window=3, min_periods=1)
@@ -112,9 +125,10 @@ class Features:
 
             # Map this back to the main dataframe based on who the opponent is
             if "opponent_team" in df.columns:
-                df = df.merge(team_xgc[
-                        ["team", "season", "GW", "team_xGC_last_3"]
-                    ].rename(columns={"team": "opponent_team"}),
+                df = df.merge(
+                    team_xgc[["team", "season", "GW", "team_xGC_last_3"]].rename(
+                        columns={"team": "opponent_team"}
+                    ),
                     on=["opponent_team", "season", "GW"],
                     how="left",
                 )
@@ -139,22 +153,27 @@ class Features:
 
         # append flat features
         feature_cols += [col for col in ["was_home", "value"] if col in df.columns]
-        feature_cols += [f"position_{p}" for p in self.POSITIONS if f"position_{p}" in df.columns]
+        feature_cols += [
+            f"position_{p}" for p in self.POSITIONS if f"position_{p}" in df.columns
+        ]
 
         return feature_cols
 
     def get_unscaled_features(self, df: pd.DataFrame) -> list[str]:
-        return [f"position_{p}" for p in self.POSITIONS if f"position_{p}" in df.columns]
+        return [
+            f"position_{p}" for p in self.POSITIONS if f"position_{p}" in df.columns
+        ]
+
 
 def main():
     input_path = DATA_DIR / "merged_data.csv"
     output_path = DATA_DIR / "data_with_features.csv"
-    feature_config_path = DATA_DIR / "all_feature_names.json"
+    feature_config_path = MODELS_DIR / "all_feature_names.json"
 
     if not input_path.exists():
         raise FileNotFoundError(f"File not found: {input_path}")
 
-    df = pd.read_csv(input_path, low_memory = False)
+    df = pd.read_csv(input_path, low_memory=False)
 
     engineer = Features(windows=[1, 3, 5])
     df_features = engineer.transform(df)
@@ -178,6 +197,7 @@ def main():
 
     print(f"Feature config saved to {feature_config_path}")
     print(f"Total features created: {len(feature_names)}")
+
 
 if __name__ == "__main__":
     main()

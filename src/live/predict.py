@@ -7,7 +7,7 @@ import pandas as pd
 
 # Put the repo root on sys.path so we can resolve `from src import ...` properly
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.common.constants import DATA_DIR, MODELS_DIR
+from src.common.constants import MODELS_DIR
 
 
 def load_latest_features() -> pd.DataFrame:
@@ -48,7 +48,7 @@ def load_latest_features() -> pd.DataFrame:
 
 def generate_predictions():
     model_path = MODELS_DIR / "ridge_model.joblib"
-    config_path = DATA_DIR / "all_feature_names.json"
+    config_path = MODELS_DIR / "all_feature_names.json"
 
     if not model_path.exists():
         raise FileNotFoundError(
@@ -82,9 +82,7 @@ def generate_predictions():
 
     for pos in positions:
         pos_df = clean_df[clean_df[pos_col] == pos]
-        top_picks = pos_df.sort_values(
-            by="predicted_3gw_pts", ascending=False
-        ).head(5)
+        top_picks = pos_df.sort_values(by="predicted_3gw_pts", ascending=False).head(5)
 
         print(f"\n--- {pos} ---")
         for _, row in top_picks.iterrows():

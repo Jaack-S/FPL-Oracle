@@ -1,0 +1,54 @@
+{
+  "feature_columns": [
+    "total_points_last_1",
+    "total_points_last_3",
+    "total_points_last_5",
+    "minutes_last_1",
+    "minutes_last_3",
+    "minutes_last_5",
+    "expected_goals_last_1",
+    "expected_goals_last_3",
+    "expected_goals_last_5",
+    "expected_assists_last_1",
+    "expected_assists_last_3",
+    "expected_assists_last_5",
+    "expected_goals_conceded_last_1",
+    "expected_goals_conceded_last_3",
+    "expected_goals_conceded_last_5",
+    "bonus_last_1",
+    "bonus_last_3",
+    "bonus_last_5",
+    "was_home",
+    "value",
+    "position_GK",
+    "position_DEF",
+    "position_MID",
+    "position_FWD"
+  ],
+  "windows": [
+    1,
+    3,
+    5
+  ],
+  "metrics": [
+    "total_points",
+    "minutes",
+    "expected_goals",
+    "expected_assists",
+    "expected_goals_conceded",
+    "bonus"
+  ],
+  "min_periods": 1,
+  "unscaled_features": [
+    "position_GK",
+    "position_DEF",
+    "position_MID",
+    "position_FWD"
+  ],
+  "positions": [
+    "GK",
+    "DEF",
+    "MID",
+    "FWD"
+  ]
+}
