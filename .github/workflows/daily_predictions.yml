@@ -1,0 +1,43 @@
+name: Daily FPL Predictions
+
+on:
+  schedule:
+    # 09:00 UTC every day
+    - cron: '0 9 * * *'
+  workflow_dispatch:  # allows manual trigger from the Actions tab
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch live FPL data
+        run: |
+          source .venv/bin/activate
+          python src/live/get_live_data.py
+
+      - name: Generate predictions and send to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          source .venv/bin/activate
+          python src/live/telegram.py
