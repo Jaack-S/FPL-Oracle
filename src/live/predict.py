@@ -35,6 +35,10 @@ def predict_points(model, feature_cols: list[str]) -> pd.DataFrame:
     """Load live features and score every player with predicted_3gw_pts."""
     df = load_latest_features()
 
+    # Keep each player's most recent gameweek row only - the live feature file
+    # has one row per player per gameweek played so far this season.
+    df = df.sort_values("GW").drop_duplicates(subset="element", keep="last")
+
     clean_df = df.dropna(subset=feature_cols).copy()
     X_live = clean_df[feature_cols]
     clean_df["predicted_3gw_pts"] = model.predict(X_live)
